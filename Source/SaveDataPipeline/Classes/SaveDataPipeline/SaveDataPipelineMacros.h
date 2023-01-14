@@ -1,0 +1,6 @@
+#pragma once
+
+#include "UObject/ObjectMacros.h"
+
+
+#define GENERATED_SAVE_PIPELINE_BODY(...) BODY_MACRO_COMBINE(CURRENT_FILE_ID,_,__LINE__,_GENERATED_SAVE_PIPELINE_BODY);

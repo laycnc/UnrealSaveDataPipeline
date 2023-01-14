@@ -1,0 +1,27 @@
+{
+    "FileVersion": 3,
+    "Version": 1,
+    "VersionName": "1.0",
+    "FriendlyName": "SaveDataPipeline",
+    "Description": "",
+    "Category": "Other",
+    "CreatedBy": "",
+    "CreatedByURL": "",
+    "DocsURL": "",
+    "MarketplaceURL": "",
+    "SupportURL": "",
+    "CanContainContent": true,
+    "IsBetaVersion": true,
+    "IsExperimentalVersion": false,
+    "Installed": false,
+    "CanBeUsedWithUnrealHeaderTool": true,
+    "SupportedPrograms": [ "UnrealHeaderTool" ],
+
+    "Modules": [
+        {
+            "Name": "SaveDataPipeline",
+            "Type": "Runtime",
+            "LoadingPhase": "Default"
+        }
+    ]
+}
