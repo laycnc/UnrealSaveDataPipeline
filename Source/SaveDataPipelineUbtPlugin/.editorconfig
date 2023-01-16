@@ -4,6 +4,7 @@
 
 # Dotnet code style settings:
 [*.cs]
+charset = utf-8-bom
 indent_style = tab
 
 # Sort using and Import directives with System.* appearing first
