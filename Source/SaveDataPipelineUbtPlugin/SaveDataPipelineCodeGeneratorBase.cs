@@ -6,6 +6,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using EpicGames.UHT.Types;
+using EpicGames.UHT.Utils;
+using Microsoft.Extensions.Logging;
 
 namespace SaveDataPipelineUbtPlugin
 {
@@ -31,6 +33,18 @@ namespace SaveDataPipelineUbtPlugin
 		public static string EndEditorOnlyGuard = "#endif //WITH_EDITOR\r\n";
 
 
+		public readonly IUhtExportFactory Factory;
+		public UhtSession Session => Factory.Session;
+		public UhtHeaderFile TargetHeader { get; }
+		public List<UhtStruct> TargetStructs { get; }
+
+		public SaveDataPipelineCodeGeneratorBase(IUhtExportFactory factory, UhtHeaderFile targetHeader, List<UhtStruct> targetStructs)
+		{
+			Factory = factory;
+			TargetHeader = targetHeader;
+			TargetStructs = targetStructs;
+		}
+
 		protected void ExportStruct(StringBuilder builder, UhtType type)
 		{
 			if (type is UhtStruct structObj)
@@ -47,6 +61,42 @@ namespace SaveDataPipelineUbtPlugin
 		}
 
 		protected abstract void ExportStruct(StringBuilder builder, UhtStruct structObj);
+
+		protected IEnumerable<UhtStruct> GetStructOfOtherHeaderFileOnDepends()
+		{
+			foreach (UhtStruct structObj in TargetHeader.Children.OfType<UhtStruct>())
+			{
+				if (!structObj.MetaData.ContainsKey("BaseType"))
+				{
+					continue;
+				}
+				string BaseTypeName = structObj.MetaData.GetValueOrDefault("BaseType");
+				UhtStruct? baseType = TargetStructs.Find(target => target.EngineName == BaseTypeName);
+				if (baseType == null)
+				{
+					Session.Logger?.Log(LogLevel.Error, $"Not Found Type F{BaseTypeName}");
+					continue;
+				}
+				if (baseType.HeaderFile != TargetHeader)
+				{
+					yield return baseType;
+				}
+			}
+		}
+		protected static IEnumerable<UhtType> GetStructPropertyTypes(UhtStruct TargetStruct)
+		{
+			foreach (UhtProperty Property in TargetStruct.Children.OfType<UhtProperty>())
+			{
+				if (Property is UhtEnumProperty enumProperty)
+				{
+					yield return enumProperty.Enum;
+				}
+				if (Property is UhtStructProperty structProperty)
+				{
+					yield return structProperty.ScriptStruct;
+				}
+			}
+		}
 
 	}
 }

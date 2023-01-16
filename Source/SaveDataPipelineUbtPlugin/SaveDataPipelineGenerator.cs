@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+ï»¿// Copyright Epic Games, Inc. All Rights Reserved.
 
 using EpicGames.Core;
 using EpicGames.UHT.Tables;
@@ -28,17 +28,17 @@ namespace SaveDataPipelineUbtPlugin
 		private List<UhtHeaderFile> TargetHeaders { get; }
 
 		//[UhtKeyword(Extends = UhtTableNames.NativeInterface)]
-		[UhtKeyword(Extends = UhtTableNames.Struct, Keyword = "GENERATED_SAVE_PIPELINE_BODY")]
-		private static UhtParseResult ClassKeyword(UhtParsingScope topScope, UhtParsingScope actionScope, ref UhtToken token)
-		{
+		//[UhtKeyword(Extends = UhtTableNames.Struct, Keyword = "GENERATED_SAVE_PIPELINE_BODY")]
+		//private static UhtParseResult ClassKeyword(UhtParsingScope topScope, UhtParsingScope actionScope, ref UhtToken token)
+		//{
+		//
+		//	// todo
+		//	// ã“ã“ã®tokenã‚’topScopeã«ä¿æŒã•ã›ã‚‹å¿…è¦ãŒã‚ã‚‹ãŒã‚µãƒ³ãƒ—ãƒ«ã‚³ãƒ¼ãƒ‰ãŒç„¡ã„ã®ã§ä¸€æ—¦æ”¾ç½®
+		//
+		//	return UhtParseResult.Handled;
+		//}
 
-			// todo
-			// ‚±‚±‚Ìtoken‚ğtopScope‚É•Û‚³‚¹‚é•K—v‚ª‚ ‚é‚ªƒTƒ“ƒvƒ‹ƒR[ƒh‚ª–³‚¢‚Ì‚Åˆê’U•ú’u
-
-			return UhtParseResult.Handled;
-		}
-
-			[UhtExporter(Name = "SaveDataPipeline", Description = "Generic Script Plugin Generator", Options = UhtExporterOptions.Default, ModuleName = "SaveDataPipeline", CppFilters = new string[] { "*.savepipeline.cpp" }, HeaderFilters = new string[] { "*.savepipeline.h" })]
+		[UhtExporter(Name = "SaveDataPipeline", Description = "Generic Script Plugin Generator", Options = UhtExporterOptions.Default, ModuleName = "SaveDataPipeline", CppFilters = new string[] { "*.savepipeline.cpp" }, HeaderFilters = new string[] { "*.savepipeline.h" })]
 		private static void ScriptGeneratorExporter(IUhtExportFactory Factory)
 		{
 
@@ -82,16 +82,16 @@ namespace SaveDataPipelineUbtPlugin
 
 			List<Task?> tasks = new();
 
-			foreach(UhtHeaderFile target_struct in TargetHeaders) 
+			foreach(UhtHeaderFile target_header in TargetHeaders) 
 			{
 				tasks.Add(Factory.CreateTask((IUhtExportFactory factory) =>
 				{
-					new SaveDataPipelineHeaderGenerator(factory, target_struct).Generate();
+					new SaveDataPipelineHeaderGenerator(factory, target_header, TargetStructs).Generate();
 				}));
 
 				tasks.Add(Factory.CreateTask((IUhtExportFactory factory) =>
 				{
-					new SaveDataPipelineSourceGenerator(factory, target_struct).Generate();
+					new SaveDataPipelineSourceGenerator(factory, target_header, TargetStructs).Generate();
 				}));
 			}
 

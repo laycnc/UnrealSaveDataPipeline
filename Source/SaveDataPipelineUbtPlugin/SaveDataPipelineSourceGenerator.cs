@@ -16,14 +16,16 @@ namespace SaveDataPipelineUbtPlugin
 {
 	internal class SaveDataPipelineSourceGenerator : SaveDataPipelineCodeGeneratorBase
 	{
-		public readonly IUhtExportFactory Factory;
-		public UhtSession Session => Factory.Session;
-		public UhtHeaderFile TargetHeader { get; set; }
+		public static string StructHashRead =
+	"\tint32 Hash = 0;\r\n" +
+	"\tif( InReadHash == nullptr )\r\n" +
+	"\t{\r\n" +
+	"\t\tMemoryReader << Hash;\r\n" +
+	"\t}\r\n";
 
-		public SaveDataPipelineSourceGenerator(IUhtExportFactory factory, UhtHeaderFile targetHeader)
+		public SaveDataPipelineSourceGenerator(IUhtExportFactory factory, UhtHeaderFile targetHeader, List<UhtStruct> targetStructs)
+			: base(factory, targetHeader, targetStructs) 
 		{
-			Factory = factory;
-			TargetHeader = targetHeader;
 		}
 
 		public void Generate()
@@ -33,6 +35,23 @@ namespace SaveDataPipelineUbtPlugin
 			borrower.StringBuilder.Append(HeaderCopyright);
 			borrower.StringBuilder.Append(IncludeMemoryWriterHeader);
 			borrower.StringBuilder.Append(IncludeMemoryReaderHeader);
+
+			List<UhtHeaderFile> DependHeaderLists = new List<UhtHeaderFile>();
+			foreach (UhtStruct dependStruct in GetStructOfOtherHeaderFileOnDepends())
+			{
+				DependHeaderLists.Add(dependStruct.HeaderFile);
+				foreach (UhtType propertyType in GetStructPropertyTypes(dependStruct))
+				{
+					DependHeaderLists.Add(dependStruct.HeaderFile);
+				}
+			}
+			foreach(UhtHeaderFile headerFile in DependHeaderLists.Distinct())
+			{
+				if (headerFile != TargetHeader)
+				{
+					borrower.StringBuilder.Append($"#include \"{headerFile.EngineName}\"\r\n");
+				}
+			}
 
 			// インクルードのパス
 			string IncludePath = Path.GetRelativePath(TargetHeader.Package.Module.IncludeBase, TargetHeader.FilePath).Replace('\\', '/');
@@ -55,10 +74,11 @@ namespace SaveDataPipelineUbtPlugin
 			builder.Append($"// F{structObj.EngineName} \r\n");
 			builder.Append("\r\n\r\n");
 
+			UhtStruct? BaseTypeResult = null;
 			if (structObj.MetaData.ContainsKey("BaseType"))
 			{
 				string BaseTypeName = structObj.MetaData.GetValueOrDefault("BaseType");
-				UhtStruct? BaseTypeResult = Session.FindType(null, UhtFindOptions.SourceName | UhtFindOptions.ScriptStruct, $"F{BaseTypeName}") as UhtStruct;
+				BaseTypeResult = Session.FindType(null, UhtFindOptions.SourceName | UhtFindOptions.ScriptStruct, $"F{BaseTypeName}") as UhtStruct;
 
 				if (BaseTypeResult != null)
 				{
@@ -70,28 +90,37 @@ namespace SaveDataPipelineUbtPlugin
 				}
 			}
 
-			builder.Append($"void F{structObj.EngineName}::SavePipelineRead(FMemoryReader& MemoryReader)\r\n");
+			builder.Append($"void F{structObj.EngineName}::SavePipelineRead(FMemoryReader& MemoryReader, int32* InReadHash)\r\n");
 			builder.Append("{\r\n");
-			foreach (UhtType Child in structObj.Children)
+			builder.Append(StructHashRead);
+
+			builder.Append($"\tif( Hash != F{structObj.EngineName}::GetSavePipelineHash() )\r\n");
+			builder.Append("\t{\r\n");
+			if(BaseTypeResult != null)
 			{
-				if (Child is UhtProperty Property)
-				{
-					// 	MemoryReader << FileTypeTag;
-					builder.Append($"\tMemoryReader << {Property.EngineName};\r\n");
-				}
+				builder.Append($"\t\tF{BaseTypeResult.EngineName} OldVersion;\r\n");
+				builder.Append($"\t\tOldVersion.SavePipelineRead( MemoryReader, &Hash );\r\n");
+				builder.Append($"\t\tSavePipelineConvert(OldVersion);\r\n");
+			}
+			builder.Append("\t\treturn;\r\n");
+			builder.Append("\t}\r\n");
+
+			foreach (UhtProperty Property in structObj.Children.OfType<UhtProperty>())
+			{
+				// 	MemoryReader << FileTypeTag;
+				builder.Append($"\tMemoryReader << {Property.EngineName};\r\n");
 			}
 			builder.Append("}\r\n");
 			builder.Append("\r\n");
 
 			builder.Append($"void F{structObj.EngineName}::SavePipelineWrite(FMemoryWriter& MemoryWriter)\r\n");
 			builder.Append("{\r\n");
-			foreach (UhtType Child in structObj.Children)
+			builder.Append($"\tint32 Hash = F{structObj.EngineName}::GetSavePipelineHash();\r\n");
+			builder.Append("\tMemoryWriter << Hash;\r\n");
+			foreach (UhtProperty Property in structObj.Children.OfType<UhtProperty>())
 			{
-				if (Child is UhtProperty Property)
-				{
-					// 	MemoryReader << FileTypeTag;
-					builder.Append($"\tMemoryWriter << {Property.EngineName};\r\n");
-				}
+				// 	MemoryReader << FileTypeTag;
+				builder.Append($"\tMemoryWriter << {Property.EngineName};\r\n");
 			}
 			builder.Append("}\r\n");
 			builder.Append("\r\n");
@@ -103,14 +132,59 @@ namespace SaveDataPipelineUbtPlugin
 			builder.Append($"void F{structObj.EngineName}::SavePipelineConvert(const F{baseType.EngineName}& InPrevData)\r\n");
 			builder.Append("{\r\n");
 
-			foreach (UhtProperty Property in structObj.Children.Cast<UhtProperty>())
+			foreach (UhtProperty Property in structObj.Children.OfType<UhtProperty>())
 			{
-				UhtProperty? Result = baseType.Children.Find(BaseChild => BaseChild.EngineName == Property.EngineName) as UhtProperty;
+				UhtProperty? OldProperty = baseType.Children.Find(BaseChild => BaseChild.EngineName == Property.EngineName) as UhtProperty;
 
-				if (Result != null)
+				if (OldProperty == null)
 				{
-					builder.Append($"\t{Property.EngineName} = InPrevData.{Result.EngineName};\r\n");
+					continue;
 				}
+
+				if( OldProperty is UhtEnumProperty oldEnumProperty && Property is UhtEnumProperty enumProperty1) 
+				{
+					if( oldEnumProperty.Enum == enumProperty1.Enum )
+					{
+						// 同じEnumなので代入でコピー出来る
+						builder.Append($"\t{Property.EngineName} = InPrevData.{OldProperty.EngineName};\r\n");
+					}
+					else
+					{
+						builder.Append($"\tswitch(InPrevData.{OldProperty.EngineName})\r\n");
+						builder.Append("\t{\r\n");
+
+						string GetEnumLabel(UhtEnumValue enumValue, UhtEnumProperty enumProperty)
+						{
+							return enumValue.Name.Replace($"{enumProperty.Enum.EngineName}::", "");
+						}
+
+						foreach (UhtEnumValue enumValue in oldEnumProperty.Enum.EnumValues)
+						{
+							string EnumLabel = GetEnumLabel(enumValue, oldEnumProperty);
+
+							bool IsExist(UhtEnumValue target)
+							{
+								return GetEnumLabel(target, enumProperty1) == EnumLabel;
+							}
+
+							builder.Append($"\t\tcase {enumValue.Name}:\r\n");
+							if (enumProperty1.Enum.EnumValues.Exists(IsExist))
+							{
+								UhtEnumValue ResultValue = enumProperty1.Enum.EnumValues.Find(IsExist);
+								builder.Append($"\t\t\t{Property.EngineName} = {ResultValue.Name};\r\n");
+							}
+							builder.Append("\t\t\tbreak;\r\n");
+						}
+						builder.Append($"\t\tdefault:\r\n");
+						builder.Append("\t\t\tbreak;\r\n");
+						builder.Append("\t}\r\n\r\n");
+						//
+						//oldEnumProperty.Enum.Children
+					}
+					continue;
+				}
+
+				builder.Append($"\t{Property.EngineName} = InPrevData.{OldProperty.EngineName};\r\n");
 			}
 
 			builder.Append("}\r\n");

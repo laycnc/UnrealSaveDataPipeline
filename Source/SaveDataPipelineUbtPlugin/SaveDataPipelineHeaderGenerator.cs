@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using EpicGames.UHT.Tables;
+using EpicGames.Core;
 using EpicGames.UHT.Utils;
 using EpicGames.UHT.Types;
 using System.IO;
@@ -14,17 +15,12 @@ namespace SaveDataPipelineUbtPlugin
 {
 	class SaveDataPipelineHeaderGenerator : SaveDataPipelineCodeGeneratorBase
 	{
-		public readonly IUhtExportFactory Factory;
-		public UhtSession Session => Factory.Session;
-
-		public UhtHeaderFile TargetHeader { get; set; }
 
 		public string FileId { get; }
 
-		public SaveDataPipelineHeaderGenerator(IUhtExportFactory factory, UhtHeaderFile targetHeader)
+		public SaveDataPipelineHeaderGenerator(IUhtExportFactory factory, UhtHeaderFile targetHeader, List<UhtStruct> targetStructs)
+						: base(factory, targetHeader, targetStructs)
 		{
-			Factory = factory;
-			TargetHeader = targetHeader;
 			FileId =  GetFileId();
 		}
 
@@ -37,6 +33,12 @@ namespace SaveDataPipelineUbtPlugin
 
 			borrower.StringBuilder.Append("class FMemoryReader;\r\n");
 			borrower.StringBuilder.Append("class FMemoryWriter;\r\n");
+
+			foreach( UhtStruct dependStruct in GetStructOfOtherHeaderFileOnDepends() )
+			{
+				borrower.StringBuilder.Append($"struct F{dependStruct.EngineName};\r\n");
+			}
+
 			borrower.StringBuilder.Append("\r\n\r\n");
 
 			ExportStruct(borrower.StringBuilder, TargetHeader);
@@ -55,11 +57,22 @@ namespace SaveDataPipelineUbtPlugin
 			builder.Append($"// {structObj.EngineName} \r\n");
 			builder.Append("\r\n\r\n");
 
+			// SaveData Hash
+			string SaveDataPipelineHash = $"{FileId}_{LineNumber}_SAVE_PIPELINE_HASH";
+			builder.Append($"#define {SaveDataPipelineHash} \\\r\n");
+			builder.Append("public: \\\r\n");
+			builder.Append("static int32 GetSavePipelineHash()\\\r\n");
+			builder.Append("{\\\r\n");
+			builder.Append($"\tconstexpr int32 Hash = {GetStructNameHash(structObj).GetHashCode()};\\\r\n");
+			builder.Append($"\treturn Hash;\\\r\n");
+			builder.Append("}\\\r\n");
+			builder.Append("\r\n\r\n");
+
 			// SaveDataSerialize
 			string SaveDataPipelineSerialize = $"{FileId}_{LineNumber}_SAVE_PIPELINE_SERIALIZE";
 			builder.Append($"#define {SaveDataPipelineSerialize} \\\r\n");
 			builder.Append("public: \\\r\n");
-			builder.Append("void SavePipelineRead(FMemoryReader& MemoryReader);\\\r\n");
+			builder.Append("void SavePipelineRead(FMemoryReader& MemoryReader, int32* InReadHash = nullptr);\\\r\n");
 			builder.Append("void SavePipelineWrite(FMemoryWriter& MemoryWriter);\r\n");
 			builder.Append("\r\n\r\n");
 
@@ -79,6 +92,7 @@ namespace SaveDataPipelineUbtPlugin
 			builder.Append($"#define {FileId}_{LineNumber}_GENERATED_SAVE_PIPELINE_BODY \\\r\n");
 			builder.Append("PRAGMA_DISABLE_DEPRECATION_WARNINGS \\\r\n");
 			builder.Append("public: \\\r\n");
+			builder.Append($"\t{SaveDataPipelineHash} \\\r\n");
 			builder.Append($"\t{SaveDataPipelineSerialize} \\\r\n");
 			builder.Append($"\t{SaveDataPipelineConvert} \\\r\n");
 			builder.Append("PRAGMA_DISABLE_DEPRECATION_WARNINGS \r\n");
@@ -120,6 +134,12 @@ namespace SaveDataPipelineUbtPlugin
 			filePath = filePath.Replace('.', '_');
 
 			return $"FID_{filePath}";
+		}
+
+		private static IoHash GetStructNameHash(UhtStruct structObj)
+		{
+			byte[] Data = Encoding.ASCII.GetBytes(structObj.EngineName);
+			return IoHash.Compute(Data);
 		}
 
 		/// <summary>

@@ -41,6 +41,9 @@
     <Reference Include="EpicGames.Core">
       <HintPath>$(EngineDir)\Binaries\DotNET\UnrealBuildTool\EpicGames.Core.dll</HintPath>
     </Reference>
+    <Reference Include="EpicGames.IoHash">
+      <HintPath>$(EngineDir)\Binaries\DotNET\UnrealBuildTool\EpicGames.IoHash.dll</HintPath>
+    </Reference>
     <Reference Include="EpicGames.UHT">
       <HintPath>$(EngineDir)\Binaries\DotNET\UnrealBuildTool\EpicGames.UHT.dll</HintPath>
     </Reference>
