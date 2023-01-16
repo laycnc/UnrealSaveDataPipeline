@@ -1,0 +1,12 @@
+# NOTE: Requires **VS2019 16.3** or later
+
+# EditorConfig is awesome:http://EditorConfig.org
+
+# Dotnet code style settings:
+[*.cpp]
+charset = utf-8
+indent_style = tab
+
+[*.h]
+charset = utf-8
+indent_style = tab
