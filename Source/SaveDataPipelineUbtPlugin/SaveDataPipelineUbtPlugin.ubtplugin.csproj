@@ -12,7 +12,7 @@
     <Configurations>Debug;Release;Development</Configurations>
     <RootNamespace>SaveDataPipelineUbtPlugin</RootNamespace>
     <AssemblyName>SaveDataPipelineUbtPlugin</AssemblyName>
-    <OutputPath>..\..\..\..\Binaries\DotNET\UnrealBuildTool\Plugins\SaveDataPipelineUbtPlugin\</OutputPath>
+    <OutputPath>..\..\Binaries\DotNET\UnrealBuildTool\Plugins\SaveDataPipelineUbtPlugin\</OutputPath>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <DebugType>pdbonly</DebugType>
     <Nullable>enable</Nullable>
