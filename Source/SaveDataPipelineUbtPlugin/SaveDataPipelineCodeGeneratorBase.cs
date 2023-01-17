@@ -1,6 +1,7 @@
 ﻿// Copyright Epic Games, Inc. All Rights Reserved.
 
 using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -96,6 +97,13 @@ namespace SaveDataPipelineUbtPlugin
 					yield return structProperty.ScriptStruct;
 				}
 			}
+		}
+
+		protected static string GetRelativeHeaderFilePath( UhtHeaderFile InHaderFile )
+		{
+			string IncludePath = Path.GetRelativePath(InHaderFile.Package.Module.IncludeBase, InHaderFile.FilePath);
+			IncludePath = IncludePath.Replace('\\', '/');
+			return IncludePath;
 		}
 
 	}

@@ -1,6 +1,7 @@
 ﻿// Copyright Epic Games, Inc. All Rights Reserved.
 
 using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,7 +10,6 @@ using EpicGames.Core;
 using EpicGames.UHT.Tables;
 using EpicGames.UHT.Utils;
 using EpicGames.UHT.Types;
-using System.IO;
 using Microsoft.Extensions.Logging;
 
 namespace SaveDataPipelineUbtPlugin
@@ -49,13 +49,12 @@ namespace SaveDataPipelineUbtPlugin
 			{
 				if (headerFile != TargetHeader)
 				{
-					borrower.StringBuilder.Append($"#include \"{headerFile.EngineName}\"\r\n");
+					borrower.StringBuilder.Append($"#include \"{GetRelativeHeaderFilePath(headerFile)}\"\r\n");
 				}
 			}
 
 			// インクルードのパス
-			string IncludePath = Path.GetRelativePath(TargetHeader.Package.Module.IncludeBase, TargetHeader.FilePath).Replace('\\', '/');
-			borrower.StringBuilder.Append($"#include \"{IncludePath}\"\r\n");
+			borrower.StringBuilder.Append($"#include \"{GetRelativeHeaderFilePath(TargetHeader)}\"\r\n");
 
 			borrower.StringBuilder.Append("\r\n\r\n");
 
