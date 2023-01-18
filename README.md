@@ -8,6 +8,10 @@ This "README.md" was created by DeepL translation
 This Plugin performs code generation for UnrealEngine save data.  
 UHT (UnrealHeaderTool) is used for code generation.  
 
+In the save mechanism using USaveGame, serialization is performed in a reflection-based manner.  
+The use of reflection results in performance degradation.  
+Additional information such as meta information is also saved, which increases the file size.  
+By generating the code in advance, the above disadvantages are eliminated.  
 
 # For generated code
 
