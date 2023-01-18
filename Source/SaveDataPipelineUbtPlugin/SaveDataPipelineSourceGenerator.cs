@@ -89,7 +89,7 @@ namespace SaveDataPipelineUbtPlugin
 				}
 			}
 
-			builder.Append($"void F{structObj.EngineName}::SavePipelineRead(FMemoryReader& MemoryReader, int32* InReadHash)\r\n");
+			builder.Append($"bool F{structObj.EngineName}::SavePipelineRead(FMemoryReader& MemoryReader, int32* InReadHash)\r\n");
 			builder.Append("{\r\n");
 			builder.Append(StructHashRead);
 
@@ -98,10 +98,17 @@ namespace SaveDataPipelineUbtPlugin
 			if(BaseTypeResult != null)
 			{
 				builder.Append($"\t\tF{BaseTypeResult.EngineName} OldVersion;\r\n");
-				builder.Append($"\t\tOldVersion.SavePipelineRead( MemoryReader, &Hash );\r\n");
-				builder.Append($"\t\tSavePipelineConvert(OldVersion);\r\n");
+				builder.Append($"\t\tif( OldVersion.SavePipelineRead( MemoryReader, &Hash ) )\r\n");
+				builder.Append("\t\t{\r\n");
+				builder.Append($"\t\t\treturn SavePipelineConvert(OldVersion);\r\n");
+				builder.Append("\t\t}\r\n");
+				builder.Append("\t\treturn false;\r\n");
 			}
-			builder.Append("\t\treturn;\r\n");
+			else
+			{
+				builder.Append("\t\t// Read Save Data Version Not Found\r\n");
+				builder.Append("\t\treturn false;\r\n");
+			}
 			builder.Append("\t}\r\n");
 
 			foreach (UhtProperty Property in structObj.Children.OfType<UhtProperty>())
@@ -109,10 +116,12 @@ namespace SaveDataPipelineUbtPlugin
 				// 	MemoryReader << FileTypeTag;
 				builder.Append($"\tMemoryReader << {Property.EngineName};\r\n");
 			}
+			builder.Append("\t// Success!\r\n");
+			builder.Append("\treturn true;\r\n");
 			builder.Append("}\r\n");
 			builder.Append("\r\n");
 
-			builder.Append($"void F{structObj.EngineName}::SavePipelineWrite(FMemoryWriter& MemoryWriter)\r\n");
+			builder.Append($"bool F{structObj.EngineName}::SavePipelineWrite(FMemoryWriter& MemoryWriter)\r\n");
 			builder.Append("{\r\n");
 			builder.Append($"\tint32 Hash = F{structObj.EngineName}::GetSavePipelineHash();\r\n");
 			builder.Append("\tMemoryWriter << Hash;\r\n");
@@ -121,6 +130,8 @@ namespace SaveDataPipelineUbtPlugin
 				// 	MemoryReader << FileTypeTag;
 				builder.Append($"\tMemoryWriter << {Property.EngineName};\r\n");
 			}
+			builder.Append("\t// Success!\r\n");
+			builder.Append("\treturn true;\r\n");
 			builder.Append("}\r\n");
 			builder.Append("\r\n");
 
@@ -128,7 +139,7 @@ namespace SaveDataPipelineUbtPlugin
 
 		public static void ExportConvert(StringBuilder builder, UhtStruct structObj, UhtStruct baseType)
 		{
-			builder.Append($"void F{structObj.EngineName}::SavePipelineConvert(const F{baseType.EngineName}& InPrevData)\r\n");
+			builder.Append($"bool F{structObj.EngineName}::SavePipelineConvert(const F{baseType.EngineName}& InPrevData)\r\n");
 			builder.Append("{\r\n");
 
 			foreach (UhtProperty Property in structObj.Children.OfType<UhtProperty>())
@@ -172,6 +183,10 @@ namespace SaveDataPipelineUbtPlugin
 								UhtEnumValue ResultValue = enumProperty1.Enum.EnumValues.Find(IsExist);
 								builder.Append($"\t\t\t{Property.EngineName} = {ResultValue.Name};\r\n");
 							}
+							else
+							{
+								builder.Append($"\t\t\t// {enumValue.Name} Not Found\r\n");
+							}
 							builder.Append("\t\t\tbreak;\r\n");
 						}
 						builder.Append($"\t\tdefault:\r\n");
@@ -186,6 +201,8 @@ namespace SaveDataPipelineUbtPlugin
 				builder.Append($"\t{Property.EngineName} = InPrevData.{OldProperty.EngineName};\r\n");
 			}
 
+			builder.Append("\t// Success!\r\n");
+			builder.Append("\treturn true;\r\n");
 			builder.Append("}\r\n");
 			builder.Append("\r\n");
 		}

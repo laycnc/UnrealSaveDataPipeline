@@ -72,8 +72,8 @@ namespace SaveDataPipelineUbtPlugin
 			string SaveDataPipelineSerialize = $"{FileId}_{LineNumber}_SAVE_PIPELINE_SERIALIZE";
 			builder.Append($"#define {SaveDataPipelineSerialize} \\\r\n");
 			builder.Append("public: \\\r\n");
-			builder.Append("void SavePipelineRead(FMemoryReader& MemoryReader, int32* InReadHash = nullptr);\\\r\n");
-			builder.Append("void SavePipelineWrite(FMemoryWriter& MemoryWriter);\r\n");
+			builder.Append("bool SavePipelineRead(FMemoryReader& MemoryReader, int32* InReadHash = nullptr);\\\r\n");
+			builder.Append("bool SavePipelineWrite(FMemoryWriter& MemoryWriter);\r\n");
 			builder.Append("\r\n\r\n");
 
 			// SaveDataPipelineConvert
@@ -84,7 +84,7 @@ namespace SaveDataPipelineUbtPlugin
 				builder.Append(" \\\r\n"); // #define after
 				string BaseType = structObj.MetaData.GetValueOrDefault("BaseType");
 				builder.Append("public: \\\r\n");
-				builder.Append($"void SavePipelineConvert(const F{BaseType}& InPrevData);\r\n");
+				builder.Append($"bool SavePipelineConvert(const F{BaseType}& InPrevData);\r\n");
 			}
 			builder.Append("\r\n\r\n");
 
