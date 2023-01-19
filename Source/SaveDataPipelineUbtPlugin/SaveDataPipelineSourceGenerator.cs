@@ -89,18 +89,26 @@ namespace SaveDataPipelineUbtPlugin
 				}
 			}
 
+			ExportSavePipelineRead( builder, structObj, BaseTypeResult );
+
+			ExportSavePipelineWrite( builder, structObj );
+		}
+
+
+		private static void ExportSavePipelineRead(StringBuilder builder, UhtStruct structObj, UhtStruct? baseType)
+		{
 			builder.Append($"bool F{structObj.EngineName}::SavePipelineRead(FMemoryReader& MemoryReader, int32* InReadHash)\r\n");
 			builder.Append("{\r\n");
 			builder.Append(StructHashRead);
 
 			builder.Append($"\tif( Hash != F{structObj.EngineName}::GetSavePipelineHash() )\r\n");
 			builder.Append("\t{\r\n");
-			if(BaseTypeResult != null)
+			if(baseType != null)
 			{
-				builder.Append($"\t\tF{BaseTypeResult.EngineName} OldVersion;\r\n");
-				builder.Append($"\t\tif( OldVersion.SavePipelineRead( MemoryReader, &Hash ) )\r\n");
+				builder.Append($"\t\tF{baseType.EngineName} OldVersion;\r\n");
+				builder.Append("\t\tif( OldVersion.SavePipelineRead( MemoryReader, &Hash ) )\r\n");
 				builder.Append("\t\t{\r\n");
-				builder.Append($"\t\t\treturn SavePipelineConvert(OldVersion);\r\n");
+				builder.Append("\t\t\treturn SavePipelineConvert(OldVersion);\r\n");
 				builder.Append("\t\t}\r\n");
 				builder.Append("\t\treturn false;\r\n");
 			}
@@ -114,13 +122,17 @@ namespace SaveDataPipelineUbtPlugin
 			foreach (UhtProperty Property in structObj.Children.OfType<UhtProperty>())
 			{
 				// 	MemoryReader << FileTypeTag;
-				builder.Append($"\tMemoryReader << {Property.EngineName};\r\n");
+				//builder.Append($"\tMemoryReader << {Property.EngineName};\r\n");
+				ExportProperty( builder, Property, "MemoryReader", Property.EngineName );
 			}
 			builder.Append("\t// Success!\r\n");
 			builder.Append("\treturn true;\r\n");
 			builder.Append("}\r\n");
 			builder.Append("\r\n");
+		}
 
+		private static void ExportSavePipelineWrite(StringBuilder builder, UhtStruct structObj)
+		{
 			builder.Append($"bool F{structObj.EngineName}::SavePipelineWrite(FMemoryWriter& MemoryWriter)\r\n");
 			builder.Append("{\r\n");
 			builder.Append($"\tint32 Hash = F{structObj.EngineName}::GetSavePipelineHash();\r\n");
@@ -128,13 +140,26 @@ namespace SaveDataPipelineUbtPlugin
 			foreach (UhtProperty Property in structObj.Children.OfType<UhtProperty>())
 			{
 				// 	MemoryReader << FileTypeTag;
-				builder.Append($"\tMemoryWriter << {Property.EngineName};\r\n");
+				//builder.Append($"\tMemoryWriter << {Property.EngineName};\r\n");
+				ExportProperty( builder, Property, "MemoryWriter", Property.EngineName );
 			}
 			builder.Append("\t// Success!\r\n");
 			builder.Append("\treturn true;\r\n");
 			builder.Append("}\r\n");
 			builder.Append("\r\n");
+		}
 
+		private static void ExportProperty( StringBuilder builder, UhtProperty InProperty, string MemortyName, string PropetyPath )
+		{
+			if( InProperty is UhtStructProperty structProperty )
+			{
+				foreach( UhtProperty childProperty in structProperty.ScriptStruct.Children.OfType<UhtProperty>() )
+				{
+					ExportProperty( builder, childProperty, MemortyName, $"{PropetyPath}.{childProperty.EngineName}" );
+				}
+				return;
+			}
+			builder.Append($"\t{MemortyName} << {PropetyPath};\r\n");
 		}
 
 		public static void ExportConvert(StringBuilder builder, UhtStruct structObj, UhtStruct baseType)
