@@ -123,7 +123,7 @@ namespace SaveDataPipelineUbtPlugin
 			{
 				// 	MemoryReader << FileTypeTag;
 				//builder.Append($"\tMemoryReader << {Property.EngineName};\r\n");
-				ExportProperty( builder, Property, "MemoryReader", Property.EngineName );
+				ExportProperty( builder, Property, "MemoryReader", Property.EngineName, false );
 			}
 			builder.Append("\t// Success!\r\n");
 			builder.Append("\treturn true;\r\n");
@@ -141,7 +141,7 @@ namespace SaveDataPipelineUbtPlugin
 			{
 				// 	MemoryReader << FileTypeTag;
 				//builder.Append($"\tMemoryWriter << {Property.EngineName};\r\n");
-				ExportProperty( builder, Property, "MemoryWriter", Property.EngineName );
+				ExportProperty( builder, Property, "MemoryWriter", Property.EngineName, true );
 			}
 			builder.Append("\t// Success!\r\n");
 			builder.Append("\treturn true;\r\n");
@@ -149,16 +149,52 @@ namespace SaveDataPipelineUbtPlugin
 			builder.Append("\r\n");
 		}
 
-		private static void ExportProperty( StringBuilder builder, UhtProperty InProperty, string MemortyName, string PropetyPath )
+		private static void ExportProperty( StringBuilder builder, UhtProperty InProperty, string MemortyName, string PropetyPath, bool IsWrite )
 		{
 			if( InProperty is UhtStructProperty structProperty )
 			{
 				foreach( UhtProperty childProperty in structProperty.ScriptStruct.Children.OfType<UhtProperty>() )
 				{
-					ExportProperty( builder, childProperty, MemortyName, $"{PropetyPath}.{childProperty.EngineName}" );
+					ExportProperty( builder, childProperty, MemortyName, $"{PropetyPath}.{childProperty.EngineName}", IsWrite );
 				}
 				return;
 			}
+
+			if( InProperty is UhtStrProperty strProperty )
+			{
+				if( strProperty.MetaData.ContainsKey("SaveDataPipelineFixedSize") )
+				{
+					if( strProperty.MetaData.TryGetValue( "SaveDataPipelineFixedSize", out var SaveDataPipelineFixedSize ) )
+					{
+						if( SaveDataPipelineFixedSize != null )
+						{
+							if( IsWrite )
+							{
+								string BufferName = PropetyPath.Replace('.', '_');
+								builder.Append("\t{\r\n");
+								builder.Append("\t\tTArray<TCHAR> __SDP_Buffer;\r\n");
+								builder.Append($"\t\t__SDP_Buffer.SetNumZeroed( {SaveDataPipelineFixedSize} );\r\n");
+								builder.Append($"\t\tFMemory::Memcpy(__SDP_Buffer.GetData(), *{PropetyPath}, FMath::Min({SaveDataPipelineFixedSize}, {PropetyPath}.Len()) * sizeof(TCHAR));\r\n");
+								builder.Append("\t\t__SDP_Buffer[__SDP_Buffer.Num() - 1] = TEXT('\\0');\r\n");
+								builder.Append($"\t\t{MemortyName} << __SDP_Buffer;\r\n");
+								builder.Append("\t}\r\n");
+							}
+							else
+							{
+								string BufferName = PropetyPath.Replace('.', '_');
+								builder.Append("\t{\r\n");
+								builder.Append("\t\tTArray<TCHAR> __SDP_Buffer;\r\n");
+								builder.Append($"\t\t__SDP_Buffer.Reserve( {SaveDataPipelineFixedSize} );\r\n");
+								builder.Append($"\t\t{MemortyName} << __SDP_Buffer;\r\n");
+								builder.Append($"\t\t{PropetyPath} = TStringView<TCHAR>( __SDP_Buffer.GetData() );\r\n");
+								builder.Append("\t}\r\n");
+							}
+							return;
+						}
+					}
+				}
+			}
+
 			builder.Append($"\t{MemortyName} << {PropetyPath};\r\n");
 		}
 
