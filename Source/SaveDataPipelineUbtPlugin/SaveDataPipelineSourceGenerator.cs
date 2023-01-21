@@ -153,6 +153,22 @@ namespace SaveDataPipelineUbtPlugin
 		{
 			if( InProperty is UhtStructProperty structProperty )
 			{
+				if( structProperty.ScriptStruct.MetaData.ContainsKey( "SaveDataPipeline" ) )
+				{
+					if( IsWrite )
+					{
+						builder.Append($"\tif(!{PropetyPath}.SavePipelineWrite({MemortyName}))\r\n");
+						builder.Append("\t{\r\n");
+						builder.Append("\t\treturn false;\r\n");
+						builder.Append("\t}\r\n");
+						return;
+					}
+					builder.Append($"\tif(!{PropetyPath}.SavePipelineRead({MemortyName}))\r\n");
+					builder.Append("\t{\r\n");
+					builder.Append("\t\treturn false;\r\n");
+					builder.Append("\t}\r\n");
+					return;
+				}
 				foreach( UhtProperty childProperty in structProperty.ScriptStruct.Children.OfType<UhtProperty>() )
 				{
 					ExportProperty( builder, childProperty, MemortyName, $"{PropetyPath}.{childProperty.EngineName}", IsWrite );
