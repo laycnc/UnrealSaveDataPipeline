@@ -102,7 +102,7 @@ PRAGMA_DISABLE_DEPRECATION_WARNINGS
 ```cpp
 
 // 旧バージョンと新バージョンの構造体を変換する関数です。
-void FSaveDataSampleStruct::SavePipelineConvert(const FSaveDataSampleStructOldVersion& InPrevData)
+bool FSaveDataSampleStruct::SavePipelineConvert(const FSaveDataSampleStructOldVersion& InPrevData)
 {
 	switch(InPrevData.Flag)
 	{
@@ -122,10 +122,12 @@ void FSaveDataSampleStruct::SavePipelineConvert(const FSaveDataSampleStructOldVe
 	Count = InPrevData.Count;
 	HogeHoge = InPrevData.HogeHoge;
 	Time = InPrevData.Time;
+	// Success!
+	return true;
 }
 
 // メモリの読み込み処理
-void FSaveDataSampleStruct::SavePipelineRead(FMemoryReader& MemoryReader, int32* InReadHash)
+bool FSaveDataSampleStruct::SavePipelineRead(FMemoryReader& MemoryReader, int32* InReadHash)
 {
 	int32 Hash = 0;
 	if( InReadHash == nullptr )
@@ -135,18 +137,22 @@ void FSaveDataSampleStruct::SavePipelineRead(FMemoryReader& MemoryReader, int32*
 	if( Hash != FSaveDataSampleStruct::GetSavePipelineHash() )
 	{
 		FSaveDataSampleStructOldVersion OldVersion;
-		OldVersion.SavePipelineRead( MemoryReader, &Hash );
-		SavePipelineConvert(OldVersion);
-		return;
+		if( OldVersion.SavePipelineRead( MemoryReader, &Hash ) )
+		{
+			return SavePipelineConvert(OldVersion);
+		}
+		return false;
 	}
 	MemoryReader << Flag;
 	MemoryReader << Count;
 	MemoryReader << HogeHoge;
 	MemoryReader << Time;
+	// Success!
+	return true;
 }
 
 // メモリの書き込み処理
-void FSaveDataSampleStruct::SavePipelineWrite(FMemoryWriter& MemoryWriter)
+bool FSaveDataSampleStruct::SavePipelineWrite(FMemoryWriter& MemoryWriter)
 {
 	int32 Hash = FSaveDataSampleStruct::GetSavePipelineHash();
 	MemoryWriter << Hash;
@@ -154,6 +160,8 @@ void FSaveDataSampleStruct::SavePipelineWrite(FMemoryWriter& MemoryWriter)
 	MemoryWriter << Count;
 	MemoryWriter << HogeHoge;
 	MemoryWriter << Time;
+	// Success!
+	return true;
 }
 
 ```
@@ -172,10 +180,13 @@ bool LoadExample( const FSaveDataSampleStruct& OutSaveData, const FString& SlotN
 	{
 		FSaveDataSampleStruct SaveVersion1 = {};
 		FMemoryReader MemoryReader(SaveDataBinary, true);
-		SaveData.SavePipelineRead(MemoryReader);
-		OutSaveData = SaveData;
-		return true;
+		if( SaveData.SavePipelineRead(MemoryReader) )
+		{
+			OutSaveData = SaveData;
+			return true;
+		}
 	}
+	return false;
 }
 
 ```
@@ -189,11 +200,14 @@ bool SaveExample( const FSaveDataSampleStruct& SaveData, const FString& SlotName
 {
 	TArray<uint8> SaveDataBinary;
 	FMemoryWriter MemoryWriter(SaveDataBinary, true);
-	SaveData.SavePipelineWrite( MemoryWriter );
-	if( UGameplayStatics::SaveDataToSlot(SaveDataBinary, SlotName, UserIndex) )
+	if( SaveData.SavePipelineWrite( MemoryWriter ) )
 	{
-		return true;
+		if( UGameplayStatics::SaveDataToSlot(SaveDataBinary, SlotName, UserIndex) )
+		{
+			return true;
+		}
 	}
+	return false;
 }
 
 ```
