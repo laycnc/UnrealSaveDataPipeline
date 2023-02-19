@@ -8,6 +8,38 @@
 #include "SaveDataPipelineAutomationTest2.generated.h"
 
 
+USTRUCT()
+struct FPiyoPiyo2
+{
+	GENERATED_BODY()
+public:
+	UPROPERTY(EditAnywhere, Category = "SaveDataPipeline.Test")
+	int32 Poool;
+
+	UPROPERTY(EditAnywhere, Category = "SaveDataPipeline.Test")
+	int32 Piyo;
+
+	UPROPERTY(EditAnywhere, Category = "SaveDataPipeline.Test")
+	int32 Count;
+};
+
+USTRUCT(meta = (SaveDataPipeline))
+struct FHogeHogeHoge
+{
+	GENERATED_BODY()
+
+    GENERATED_SAVE_PIPELINE_BODY()
+public:
+	UPROPERTY(EditAnywhere, Category = "SaveDataPipeline.Test")
+	int32 Poool;
+
+	UPROPERTY(EditAnywhere, Category = "SaveDataPipeline.Test")
+	FPiyoPiyo2 Piyo;
+
+	UPROPERTY(EditAnywhere, Category = "SaveDataPipeline.Test")
+	int32 Count;
+};
+
 UENUM()
 enum struct ESaveDataPipelineAutomationTestFlag2 : uint8
 {
@@ -25,15 +57,21 @@ struct FSaveDataPipelineAutomationTestVersionLatest
     GENERATED_SAVE_PIPELINE_BODY()
 
 public:
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "SaveDataPipeline.Test")
 	ESaveDataPipelineAutomationTestFlag2 Flag;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "SaveDataPipeline.Test")
 	int32 Count;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "SaveDataPipeline.Test", meta = ( SaveDataPipelineFixedSize = 32 ))
 	FString HogeHoge;
 	
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "SaveDataPipeline.Test")
+	FString HogeFoo;
+	
+	UPROPERTY(EditAnywhere, Category = "SaveDataPipeline.Test")
 	float Time;
+
+	UPROPERTY(EditAnywhere, Category = "SaveDataPipeline.Test")
+	FHogeHogeHoge StructValue;
 };

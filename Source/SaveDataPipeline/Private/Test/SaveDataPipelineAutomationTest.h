@@ -24,16 +24,16 @@ struct FSaveDataPipelineAutomationTestOldVersion1
     GENERATED_SAVE_PIPELINE_BODY()
 
 public:
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "SaveDataPipeline.Test")
 	ESaveDataPipelineAutomationTestFlag1 Flag;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "SaveDataPipeline.Test")
 	int32 Count;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "SaveDataPipeline.Test")
 	FString HogeHoge;
 	
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "SaveDataPipeline.Test")
 	float Time;
 };
 
@@ -46,15 +46,15 @@ struct FSaveDataPipelineAutomationTestOldVersion2
     GENERATED_SAVE_PIPELINE_BODY()
 
 public:
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "SaveDataPipeline.Test")
 	ESaveDataPipelineAutomationTestFlag1 Flag;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "SaveDataPipeline.Test")
 	int32 Count;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "SaveDataPipeline.Test")
 	FString HogeHoge;
 	
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "SaveDataPipeline.Test")
 	float Time;
 };
