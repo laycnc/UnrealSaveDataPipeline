@@ -43,9 +43,11 @@ namespace SaveDataPipelineUbtPlugin
 
 			ExportStruct(borrower.StringBuilder, TargetHeader);
 
-			string fileName = Path.Combine(TargetHeader.Package.Module.OutputDirectory, $"{TargetHeader.FileNameWithoutExtension}.savepipeline.h");
-
-			Factory.CommitOutput(fileName, borrower.StringBuilder);
+			if( SaveExportedHeaders )
+			{
+				string fileName = Path.Combine(TargetHeader.Package.Module.OutputDirectory, $"{TargetHeader.FileNameWithoutExtension}.savepipeline.h");
+				Factory.CommitOutput(fileName, borrower.StringBuilder);
+			}
 		}
 
 		protected override void ExportStruct(StringBuilder builder, UhtStruct structObj)

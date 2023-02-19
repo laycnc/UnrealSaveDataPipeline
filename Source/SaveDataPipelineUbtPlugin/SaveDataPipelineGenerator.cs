@@ -38,9 +38,11 @@ namespace SaveDataPipelineUbtPlugin
 		//	return UhtParseResult.Handled;
 		//}
 
-		[UhtExporter(Name = "SaveDataPipeline", Description = "Generic Script Plugin Generator", Options = UhtExporterOptions.Default, ModuleName = "SaveDataPipeline", CppFilters = new string[] { "*.savepipeline.cpp" }, HeaderFilters = new string[] { "*.savepipeline.h" })]
+		[UhtExporter(Name = "SaveDataPipeline", Description = "Generic Script Plugin Generator", Options = UhtExporterOptions.Default, ModuleName = "SaveDataPipeline", CppFilters = new string[] { "*.savepipeline.gen.cpp" }, HeaderFilters = new string[] { "*.savepipeline.h" })]
 		private static void ScriptGeneratorExporter(IUhtExportFactory Factory)
 		{
+			// Debug
+			//System.Diagnostics.Debugger.Launch();
 
 			// Make sure this plugin should be run
 			if (!Factory.Session.IsPluginEnabled("SaveDataPipeline", false))
@@ -78,6 +80,16 @@ namespace SaveDataPipelineUbtPlugin
 				}
 
 				InitPackageInfo(package, package);
+			}
+
+			if (!Session.GoWide)
+			{
+				foreach(UhtHeaderFile target_header in TargetHeaders) 
+				{
+					new SaveDataPipelineHeaderGenerator(Factory, target_header, TargetStructs).Generate();
+					new SaveDataPipelineSourceGenerator(Factory, target_header, TargetStructs).Generate();
+				}
+				return;
 			}
 
 			List<Task?> tasks = new();

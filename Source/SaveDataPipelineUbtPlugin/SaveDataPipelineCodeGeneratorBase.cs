@@ -39,6 +39,10 @@ namespace SaveDataPipelineUbtPlugin
 		public UhtHeaderFile TargetHeader { get; }
 		public List<UhtStruct> TargetStructs { get; }
 
+		
+		public bool SaveExportedHeaders => TargetHeader.Package.Module.SaveExportedHeaders;
+
+
 		public SaveDataPipelineCodeGeneratorBase(IUhtExportFactory factory, UhtHeaderFile targetHeader, List<UhtStruct> targetStructs)
 		{
 			Factory = factory;
